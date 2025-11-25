@@ -1,0 +1,9 @@
+tenseal>=0.3.0
+phe>=1.4.0
+numpy>=1.21.0
+pandas>=1.3.0
+matplotlib>=3.5.0
+seaborn>=0.11.0
+jupyter>=1.0.0
+memory-profiler>=0.60.0
+psutil>=5.9.0
