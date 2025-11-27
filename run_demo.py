@@ -13,7 +13,7 @@ from src.advanced_performance_analyzer import AdvancedPerformanceAnalyzer
 from src.data_simulator import MedicalDataSimulator
 
 def main():
-    print("🔬 FHE Medical Research Demo - Comprehensive Comparison")
+    print("FHE Medical Research Demo - Comprehensive Comparison")
     print("=" * 60)
     
     # Initialize components
@@ -38,21 +38,19 @@ def main():
     print("\n3. Running Paillier (Partial HE) Demo...")
     paillier_results = paillier_demo.demonstrate_operations([rec['age'] for rec in sample_records[:5]])
     
-    print("\n4. Running Research-Grade Performance Benchmark...")
+    print("\n4. Running Performance Benchmarks...")
     advanced_analyzer = AdvancedPerformanceAnalyzer()
 
     comprehensive_metrics = advanced_analyzer.comprehensive_benchmark(
         tenseal_demo, paillier_demo, [10, 50, 100]
     )
 
-    print("\n5. Generating Research-Grade Graphs...")
+    print("\n5. Generating Graphs...")
     advanced_analyzer.create_research_grade_graphs(comprehensive_metrics)
 
     
     print("\n" + "=" * 60)
-    print("🎉 Demo Complete!")
-    print("📊 Check 'results/graphs/' directory for performance charts")
-    print("💡 Review the recommendations above for choosing between FHE schemes")
+    print("Demo Complete")
     print("=" * 60)
 
 if __name__ == "__main__":

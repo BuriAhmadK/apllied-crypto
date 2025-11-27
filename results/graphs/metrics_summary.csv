@@ -1,10 +1,10 @@
 Metric,TenSEAL (CKKS),Paillier
-Encryption Time (s),0.0000,15.4151
-Memory Usage (MB),329.30,337.35
-Ciphertext Size (KB),326.62,2.85
-Key Size (KB),34642.65,1.98
-Throughput (op/s),16500.02,10719.99
+Encryption Time (s),0.0000,15.1286
+Memory Usage (MB),341.84,346.02
+Ciphertext Size (KB),326.31,2.86
+Key Size (KB),34647.25,1.98
+Throughput (op/s),16390.40,10783.38
 Mean Absolute Error,0.000000,0.000000
 Scheme Type,Fully Homomorphic,Partially Homomorphic
-Floating Point Support,✅ Yes,❌ No
-Unlimited Multiplications,✅ Yes,❌ No
+Floating Point Support,Yes,No
+Unlimited Multiplications,Yes,No

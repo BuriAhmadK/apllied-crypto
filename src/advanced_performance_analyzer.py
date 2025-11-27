@@ -1,3 +1,4 @@
+
 import matplotlib.pyplot as plt
 import numpy as np
 import time
@@ -143,61 +144,6 @@ class AdvancedPerformanceAnalyzer:
             'paillier_public_key_size': paillier_key_size
         }
     
-    def analyze_noise_growth(self, tenseal_demo, base_data, operations_chain):
-        """Analyze noise growth through operation chains"""
-        print("Analyzing noise growth...")
-        
-        try:
-            # Encrypt base data
-            encrypted_base = tenseal_demo.encrypt_batch_data([base_data])[0]
-            
-            noise_metrics = []
-            current_encrypted = encrypted_base
-            
-            for i, operation in enumerate(operations_chain):
-                # Apply operation
-                if operation == 'add':
-                    current_encrypted = current_encrypted + current_encrypted
-                elif operation == 'multiply':
-                    current_encrypted = current_encrypted * 2.0
-                elif operation == 'square':
-                    current_encrypted = current_encrypted * current_encrypted
-                
-                # Decrypt and measure deviation from expected
-                decrypted = current_encrypted.decrypt()
-                expected = self._compute_expected_value(base_data, operations_chain[:i+1])
-                
-                error = np.mean(np.abs(np.array(decrypted) - np.array(expected)))
-                noise_metrics.append({
-                    'operation_chain_length': i + 1,
-                    'operations': operations_chain[:i+1],
-                    'mean_error': error,
-                    'max_error': np.max(np.abs(np.array(decrypted) - np.array(expected)))
-                })
-            
-            return noise_metrics
-        except Exception as e:
-            print(f"Warning: Could not analyze noise growth: {e}")
-            return []
-    
-    def _compute_expected_value(self, base_data, operations):
-        """Compute expected value after operation chain"""
-        # Convert to list if it's a numpy array
-        if isinstance(base_data, np.ndarray):
-            result = base_data.tolist()
-        else:
-            result = list(base_data)  # Create a copy as a list
-        
-        for op in operations:
-            if op == 'add':
-                result = [x + x for x in result]
-            elif op == 'multiply':
-                result = [x * 2.0 for x in result]
-            elif op == 'square':
-                result = [x * x for x in result]
-        
-        return result
-    
     def comprehensive_benchmark(self, tenseal_demo, paillier_demo, data_sizes: List[int]):
         """Run comprehensive benchmark with research-grade metrics"""
         print("🚀 Running Comprehensive FHE Benchmark...")
@@ -266,14 +212,6 @@ class AdvancedPerformanceAnalyzer:
                 decrypted_sample = encrypted_data[0].decrypt()
                 error_metrics = self.measure_computation_error(original_sample, decrypted_sample)
                 metrics.update(error_metrics)
-            
-            # Noise growth analysis
-            if feature_matrix.size > 0:
-                # Convert to list properly
-                base_data = feature_matrix[0].tolist() if isinstance(feature_matrix[0], np.ndarray) else list(feature_matrix[0])
-                noise_metrics = self.analyze_noise_growth(tenseal_demo, base_data, 
-                                                        ['add', 'multiply', 'add', 'square'])
-                metrics['noise_growth'] = noise_metrics
         
         except Exception as e:
             print(f"Error in TenSEAL benchmarking: {e}")
@@ -362,36 +300,37 @@ class AdvancedPerformanceAnalyzer:
             print(f"  {display_name:<25} {t_val:<15.2f} {p_val:<15.2f} {ratio:<10}")
     
     def create_research_grade_graphs(self, benchmark_data):
-        """Create publication-quality graphs with research metrics"""
+        """Create publication-quality graphs with research metrics (5-panel layout)"""
         fig = plt.figure(figsize=(20, 16))
         
+        # Layout: 2x2 grid on top, 1 wide plot below (total 5 graphs)
+        gs = fig.add_gridspec(3, 2)
+        
+        # Top row
+        ax1 = fig.add_subplot(gs[0, 0])  # Memory
+        ax2 = fig.add_subplot(gs[0, 1])  # Ciphertext size
+        
+        # Second row
+        ax3 = fig.add_subplot(gs[1, 0])  # Throughput
+        ax4 = fig.add_subplot(gs[1, 1])  # Key size
+        
+        # Third row (spans both columns)
+        ax5 = fig.add_subplot(gs[2, :])  # Computation error
+        
         # 1. Memory Consumption Comparison
-        ax1 = plt.subplot(3, 3, 1)
         self._plot_memory_comparison(ax1, benchmark_data)
         
         # 2. Ciphertext Size Comparison
-        ax2 = plt.subplot(3, 3, 2)
         self._plot_ciphertext_size_comparison(ax2, benchmark_data)
         
         # 3. Throughput Comparison
-        ax3 = plt.subplot(3, 3, 3)
         self._plot_throughput_comparison(ax3, benchmark_data)
         
         # 4. Key Size Comparison
-        ax4 = plt.subplot(3, 3, 4)
         self._plot_key_size_comparison(ax4, benchmark_data)
         
         # 5. Computation Error
-        ax5 = plt.subplot(3, 3, 5)
         self._plot_computation_error(ax5, benchmark_data)
-        
-        # 6. Noise Growth Analysis
-        ax6 = plt.subplot(3, 3, 6)
-        self._plot_noise_growth(ax6, benchmark_data)
-        
-        # 7. Comprehensive Radar Chart
-        ax7 = plt.subplot(3, 3, (7, 9))
-        self._plot_radar_chart(ax7, benchmark_data)
         
         plt.tight_layout()
         plt.savefig(f'{self.results_dir}/research_grade_comparison.png', dpi=300, bbox_inches='tight')
@@ -455,7 +394,7 @@ class AdvancedPerformanceAnalyzer:
             schemes = ['TenSEAL', 'Paillier']
             key_sizes = [tenseal_key, paillier_key]
             
-            bars = ax.bar(schemes, key_sizes, color=['skyblue', 'lightcoral'], alpha=0.8)
+            bars = ax.bar(schemes, key_sizes, alpha=0.8)
             ax.set_ylabel('Key Size (KB)')
             ax.set_title('Key Size Comparison\n(Lower is Better)')
             
@@ -478,78 +417,8 @@ class AdvancedPerformanceAnalyzer:
         ax.legend()
         ax.grid(True, alpha=0.3)
     
-    def _plot_noise_growth(self, ax, data):
-        """Plot noise growth analysis"""
-        if data['tenseal'] and 'noise_growth' in data['tenseal'][0]:
-            noise_data = data['tenseal'][0]['noise_growth']
-            if noise_data:  # Check if noise_data is not empty
-                chain_lengths = [ng['operation_chain_length'] for ng in noise_data]
-                errors = [ng['mean_error'] for ng in noise_data]
-                
-                ax.plot(chain_lengths, errors, 'o-', linewidth=2, markersize=6, color='purple')
-                ax.set_xlabel('Operation Chain Length')
-                ax.set_ylabel('Mean Error')
-                ax.set_title('CKKS Noise Growth\n(With Operation Chains)')
-                ax.grid(True, alpha=0.3)
-    
-    def _plot_radar_chart(self, ax, data):
-        """Create comprehensive radar chart"""
-        if not data['tenseal'] or not data['paillier']:
-            return
-        
-        # Normalize metrics for radar chart (higher is better for some, lower for others)
-        categories = ['Speed', 'Memory', 'Size', 'Precision', 'Throughput']
-        
-        # Use data from medium-sized test for representative values
-        mid_idx = len(data['data_sizes']) // 2
-        t_metrics = data['tenseal'][mid_idx]
-        p_metrics = data['paillier'][mid_idx]
-        
-        # Normalize values (this is simplified - in reality you'd want careful normalization)
-        tenseal_values = [
-            1/max(t_metrics.get('encryption_time', 1), 0.001) * 1000,  # Speed (inverse of time)
-            1/max(t_metrics.get('encryption_memory_mb', 1), 0.001),    # Memory (inverse)
-            1/max(t_metrics.get('ciphertext_size_bytes', 1)/1024, 0.001),  # Size (inverse)
-            1/(t_metrics.get('mean_absolute_error', 1) + 0.001), # Precision (inverse error)
-            t_metrics.get('throughput_ops_sec', 1)         # Throughput (direct)
-        ]
-        
-        paillier_values = [
-            1/max(p_metrics.get('encryption_time', 1), 0.001) * 1000,
-            1/max(p_metrics.get('encryption_memory_mb', 1), 0.001),
-            1/max(p_metrics.get('ciphertext_size_bytes', 1)/1024, 0.001),
-            1/(p_metrics.get('mean_absolute_error', 1) + 0.001),
-            p_metrics.get('throughput_ops_sec', 1)
-        ]
-        
-        # Normalize to 0-1 scale for radar chart
-        max_val = max(max(tenseal_values), max(paillier_values))
-        if max_val > 0:
-            tenseal_norm = [v/max_val for v in tenseal_values]
-            paillier_norm = [v/max_val for v in paillier_values]
-        else:
-            tenseal_norm = [0] * len(tenseal_values)
-            paillier_norm = [0] * len(paillier_values)
-        
-        # Complete the circle
-        angles = np.linspace(0, 2*np.pi, len(categories), endpoint=False).tolist()
-        tenseal_norm += tenseal_norm[:1]
-        paillier_norm += paillier_norm[:1]
-        angles += angles[:1]
-        
-        ax.plot(angles, tenseal_norm, 'o-', linewidth=2, label='TenSEAL (FHE)')
-        ax.fill(angles, tenseal_norm, alpha=0.25)
-        ax.plot(angles, paillier_norm, 's-', linewidth=2, label='Paillier (PHE)')
-        ax.fill(angles, paillier_norm, alpha=0.25)
-        
-        ax.set_xticks(angles[:-1])
-        ax.set_xticklabels(categories)
-        ax.set_ylim(0, 1)
-        ax.set_title('Comprehensive Scheme Comparison\n(Radar Chart)')
-        ax.legend(loc='upper right')
-        ax.grid(True)
-    
     def _create_metrics_table(self, data):
+       
         """Create a summary metrics table"""
         if not data['tenseal'] or not data['paillier']:
             return
@@ -579,8 +448,8 @@ class AdvancedPerformanceAnalyzer:
                 f"{t_metrics.get('throughput_ops_sec', 0):.2f}",
                 f"{t_metrics.get('mean_absolute_error', 0):.6f}",
                 "Fully Homomorphic",
-                "✅ Yes",
-                "✅ Yes"
+                "Yes",
+                "Yes"
             ],
             'Paillier': [
                 f"{p_metrics.get('encryption_time', 0):.4f}",
@@ -590,8 +459,8 @@ class AdvancedPerformanceAnalyzer:
                 f"{p_metrics.get('throughput_ops_sec', 0):.2f}",
                 f"{p_metrics.get('mean_absolute_error', 0):.6f}",
                 "Partially Homomorphic", 
-                "❌ No",
-                "❌ No"
+                "No",
+                "No"
             ]
         }
         
@@ -607,3 +476,5 @@ class AdvancedPerformanceAnalyzer:
         print(df.to_string(index=False))
         
         return df
+
+
