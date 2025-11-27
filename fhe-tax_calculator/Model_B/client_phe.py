@@ -5,6 +5,7 @@ import time
 from phe import paillier
 import os
 WIRE = {"packets_out": 0, "packets_in": 0, "bytes_out": 0, "bytes_in": 0}
+EXTRA = {"key_bytes": 0, "ciphertext_bytes_out": 0, "ciphertext_bytes_in": 0}
 
 
 HOST = "127.0.0.1"
@@ -80,6 +81,7 @@ def main():
 
     # 1) Generate Paillier keys locally
     public_key, private_key = paillier.generate_paillier_keypair()
+    EXTRA["key_bytes"] = (public_key.n.bit_length() + 7) // 8
     print("[CLIENT] Generated Paillier keypair.")
 
     # 2) User input (monthly)
@@ -135,6 +137,7 @@ def main():
     enc_bands = []
     for b in band_details:
         enc_portion = public_key.encrypt(b["portion"])
+        EXTRA["ciphertext_bytes_out"] += (enc_portion.ciphertext().bit_length() + 7) // 8
         rate_percent = b["rate_percent"]
         rate_times1000 = int(rate_percent * 10)  # e.g. 1.0% -> 10, 2.0% -> 20, etc.
 
@@ -169,6 +172,7 @@ def main():
 
     # 6) Decrypt total tax
     tax_payload = res["tax_times1000"]
+    EXTRA["ciphertext_bytes_in"] += (int(tax_payload["c"]).bit_length() + 7) // 8
     enc_tax_times1000 = paillier.EncryptedNumber(
         public_key,
         int(tax_payload["c"]),
@@ -186,9 +190,10 @@ def main():
     print("__METRICS__ " + json.dumps({
     "model": os.getenv("MODEL_KEY", ""),
     "role": os.getenv("ROLE", "client"),
-    **WIRE
+    **WIRE,
+    **EXTRA,
+    "ciphertext_bytes_total": EXTRA["ciphertext_bytes_out"] + EXTRA["ciphertext_bytes_in"],
     }))
-
 
 
 if __name__ == "__main__":

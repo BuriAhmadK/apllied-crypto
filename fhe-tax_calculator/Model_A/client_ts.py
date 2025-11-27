@@ -45,6 +45,9 @@ import tenseal as ts
 import os
 
 WIRE = {"packets_out": 0, "packets_in": 0, "bytes_out": 0, "bytes_in": 0}
+#beep
+EXTRA = {"key_bytes": 0, "ciphertext_bytes_out": 0, "ciphertext_bytes_in": 0}
+
 
 # Same public tax law as on server
 TAX_THRESHOLDS = [30_000, 60_000, 90_000]  # T1, T2, T3
@@ -131,13 +134,14 @@ def main():
         save_galois_keys=False,
         save_relin_keys=True,
     )
+    EXTRA["key_bytes"] = len(context_bytes_public)  #beep
 
     init_packet = {
         "type": "init",
         "context": _b64encode(context_bytes_public),
         "ctxt_taxable": _b64encode(ctxt_taxable.serialize()),
     }
-
+    EXTRA["ciphertext_bytes_out"] += len(ctxt_taxable.serialize())
     # ------------------------------------------------------------
     # 3. Connect to server and run protocol (length-prefixed packets).
     # ------------------------------------------------------------
@@ -202,12 +206,15 @@ def main():
                 #   - Client encrypts bit as Enc(bit) and returns.
                 # ---------------------------------------------
                 ctxt_diff_bytes = _b64decode(pkt["ctxt_diff"])
+                EXTRA["ciphertext_bytes_in"] += len(ctxt_diff_bytes)
                 ctxt_diff = ts.bfv_vector_from(context, ctxt_diff_bytes)
 
                 diff_plain = ctxt_diff.decrypt()[0]  # BFV signed int
                 bit = 1 if diff_plain > 0 else 0
 
                 ctxt_bit = ts.bfv_vector(context, [bit])
+                EXTRA["ciphertext_bytes_out"] += len(ctxt_bit.serialize())
+
 
                 resp = {
                     "type": "cmp_response",
@@ -218,6 +225,8 @@ def main():
 
             elif ptype == "result":
                 ctxt_tax_bytes = _b64decode(pkt["ctxt_tax"])
+                EXTRA["ciphertext_bytes_in"] += len(ctxt_tax_bytes)
+
                 ctxt_tax = ts.bfv_vector_from(context, ctxt_tax_bytes)
                 end_time = time.perf_counter()  # end counting time
                 print("Tenseal computation time: {:.2f} seconds".format(end_time - start_time))
@@ -254,7 +263,9 @@ def main():
     print("__METRICS__ " + json.dumps({
         "model": os.getenv("MODEL_KEY", ""),
         "role": os.getenv("ROLE", "client"),
-        **WIRE
+        **WIRE,
+        **EXTRA,
+        "ciphertext_bytes_total": EXTRA["ciphertext_bytes_out"] + EXTRA["ciphertext_bytes_in"],
     }))
 
 
